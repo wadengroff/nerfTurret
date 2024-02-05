@@ -11,17 +11,30 @@ class Server:
 
 
 
-		with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-			s.bind((HOST, PORT))
-			s.listen()
-			print("Server has started")
-			# once a connection is received, accepted to vars
-			self.conn, self.addr = s.accept()
-		with conn:
-			print("Connected by", addr)
-	def getData(self):
-		data = self.conn.recv(1024)
-		if not data:
-			return False
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.bind((self.HOST, self.PORT))
+		s.listen()
+		print("Server has started")
+		# once a connection is received, accepted to vars
+		self.conn, self.addr = s.accept()
+		s.close()
+		print("Connected by", self.addr)
+
+		# set the socket to non-blocking mode
+		self.conn.setblocking(False)
+
+
+	def getData(self, peek=False):
+		if peek:
+			try:
+				data = self.conn.recv(1024,socket.MSG_PEEK)
+			except BlockingIOError:
+				data = False
+		else:
+			data = self.conn.recv(1024)
+		return data
 	def sendData(self, data):
 		self.conn.sendmsg(data)
+
+	def closeServer(self):
+		self.conn.close()

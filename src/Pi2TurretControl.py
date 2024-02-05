@@ -4,6 +4,12 @@ from time import sleep
 import keyboard 
 GPIO.cleanup()
 import keyboard
+from server import Server
+import socket
+
+# instantiate TCP server
+TCPserver = Server(12345)
+
 
 # Setup the GPIO pins for MOSFET
 GPIO.setmode(GPIO.BCM)
@@ -11,7 +17,7 @@ GPIO.setmode(GPIO.BCM)
 # set pins for servos
 panServo = 17
 GPIO.setup(panServo, GPIO.OUT)
-panServo = GPIO.PWN(panServo, 50)
+panServo = GPIO.PWM(panServo, 50)
 
 tiltServo = 27
 GPIO.setup(tiltServo, GPIO.OUT)
@@ -30,17 +36,35 @@ GPIO.setup(mosfetPin, GPIO.OUT)
 
 #other servo variables
 panServoDuty = 13
-panServ.ChangeDutyCycle(panServoDuty)
+panServo.ChangeDutyCycle(panServoDuty)
 
-titleServoDuty = 2.5
-tileServo.ChangeDutyCycle(tiltServoDuty)
+tiltServoDuty = 2.5
+tiltServo.ChangeDutyCycle(tiltServoDuty)
 
 triggerServoDuty = 1.8
 triggerServo.ChangeDutyCycle(triggerServoDuty)
 
-
+print("testing keyboard libary")
 while True:
-  # move the pan servo based on keyboard input
+	if keyboard.is_pressed('c'):
+		break
+print("keyboard test done")
+while True:
+
+  # check if there is data to retreive
+  isData = TCPserver.getData(peek=True)
+  if isData:
+    serverData = TCPserver.getData()
+    print(serverData)
+  else:
+    serverData = False
+
+  if serverData ==b'stop':
+    break
+  sleep(1)
+
+
+  # changing position based on inputs
   if keyboard.is_pressed("right"):
     panServoDuty -= 0.1 if panServoDuty >=2.6 else 0
     panServo.ChangeDutyCycle(panServoDuty)
@@ -51,28 +75,31 @@ while True:
     sleep(0.05)
 
   # move the tile servo based on keyboard input
-if keyboard.is_pressed("up"):
-  tiltServoDuty -= 0.1 if tiltServoDuty >= 2.6 else 0
-  sleep(0.05)
-elif keyboard.is_pressed("down"):
-  tiltServoDuty += 0.1 if tiltServoDuty <= 12 else 0
-  tiltServo.ChangeDutyCycle(tiltServoDuty)
-  sleep(0.05)
+  if keyboard.is_pressed("up"):
+    tiltServoDuty -= 0.1 if tiltServoDuty >= 2.6 else 0
+    sleep(0.05)
+  elif keyboard.is_pressed("down"):
+    tiltServoDuty += 0.1 if tiltServoDuty <= 12 else 0
+    tiltServo.ChangeDutyCycle(tiltServoDuty)
+    sleep(0.05)
 
-# turn on MOSFET when space key is pressed
-if keyboard.is_pressed("space"):
-  GPIO.output(mosfetPin, 1)
-  #can only pull the trigger while the motor is going
-  if keyboard.is_pressed("s"):
-    triggerServoDuty = 9
-    triggerServo.ChangeDutyCycle(triggerServoDuty)
-    sleep(0.5)
-    triggerServoDuty = 1.7
-    triggerServo.ChangeDutyCycle(triggerServoDuty)
+  # turn on MOSFET when space key is pressed
+  if keyboard.is_pressed("space"):
+    GPIO.output(mosfetPin, 1)
+    #can only pull the trigger while the motor is going
+    if keyboard.is_pressed("s"):
+      triggerServoDuty = 9
+      triggerServo.ChangeDutyCycle(triggerServoDuty)
+      sleep(0.5)
+      triggerServoDuty = 1.7
+      triggerServo.ChangeDutyCycle(triggerServoDuty)
   else:
     GPIO.output(mosfetPin, 0)
+
   if keyboard.is_pressed("c"):
+    print("closing")
     break
 
 
+TCPserver.closeServer()
 GPIO.cleanup()
