@@ -62,9 +62,9 @@ triggerServo.ChangeDutyCycle(triggerServoDuty)
 
 # function to control servo motors
 def changeServoDuty(duty, decrease, increment, min, max):
-  if (increase and duty - increment >= min):
+  if (decrease and duty - increment >= min):
     return duty - increment
-  elif (!increase and duty + increment <= max):
+  elif (not decrease and duty + increment <= max):
     return duty + increment
   # return with no change if out of bounds
   return duty
